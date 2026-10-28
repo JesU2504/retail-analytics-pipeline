@@ -1,0 +1,8 @@
+version: 2
+sources:
+  - name: retail
+    schema: raw
+    tables:
+      - name: customers
+      - name: products
+      - name: order_lines

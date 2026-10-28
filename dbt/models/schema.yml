@@ -1,0 +1,49 @@
+version: 2
+models:
+  - name: dim_customers
+    description: Current customer attributes with deterministic surrogate keys (SCD type 1).
+    columns:
+      - name: customer_key
+        data_tests: [unique, not_null]
+  - name: dim_products
+    description: Current product attributes with deterministic surrogate keys (SCD type 1).
+    columns:
+      - name: product_key
+        data_tests: [unique, not_null]
+  - name: dim_dates
+    description: Dates present in current source lines, not a continuous calendar.
+    columns:
+      - name: date_key
+        data_tests: [unique, not_null]
+  - name: fact_order_lines
+    description: One current order line; EUR integer cents; cancelled revenue is zero.
+    columns:
+      - name: line_id
+        data_tests: [unique, not_null]
+      - name: customer_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: "ref('dim_customers')", field: customer_key}
+      - name: product_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: "ref('dim_products')", field: product_key}
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments: {to: "ref('dim_dates')", field: date_key}
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments: {values: [completed, cancelled]}
+  - name: mart_daily_sales
+    columns:
+      - name: order_date
+        data_tests: [unique, not_null]
+  - name: mart_category_sales
+    columns:
+      - name: category
+        data_tests: [unique, not_null]
