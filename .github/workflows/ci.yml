@@ -19,7 +19,22 @@ jobs:
       - run: ruff check . && ruff format --check .
       - run: pytest -q
       - run: retail demo
+      - run: retail showcase
+      - run: python scripts/prepare_dashboard.py
       - uses: actions/upload-artifact@v4
         with:
           name: retail-report-python-${{ matrix.python }}
-          path: build/report.html
+          path: |
+            build/report.html
+            build/validation.json
+            build/showcase.json
+            build/dashboard/
+  dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test dashboard/model.test.mjs
+      - run: node --check dashboard/app.js

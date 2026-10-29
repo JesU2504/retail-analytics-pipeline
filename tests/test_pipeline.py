@@ -5,7 +5,8 @@ import duckdb
 import pytest
 
 from retail_pipeline.cli import build
-from retail_pipeline.demo import generate
+from retail_pipeline.dashboard import export_dashboard
+from retail_pipeline.demo import generate, generate_showcase
 from retail_pipeline.ingest import DataQualityError, ingest
 from retail_pipeline.report import report
 
@@ -131,6 +132,14 @@ def test_incremental_matches_full_refresh_and_report(source, tmp_path):
     assert result == {"net_revenue_cents": 32000, "completed_orders": 3, "order_lines": 4}
     assert "€320.00" in (tmp_path / "report.html").read_text()
     assert "Synthetic portfolio data" in (tmp_path / "report.html").read_text()
+    exported = export_dashboard(db, tmp_path / "snapshot.json", PROJECT / "target/run_results.json")
+    assert exported == {"lines": 4, "net_revenue_cents": 32000, "passed_checks": 21}
+    import json
+
+    snapshot = json.loads((tmp_path / "snapshot.json").read_text())
+    assert len(snapshot["quality"]) == 21
+    assert all(check["status"] == "pass" for check in snapshot["quality"])
+    assert sum(row["net_revenue_cents"] for row in snapshot["facts"]) == 32000
     # Reconciliation tests must fail when warehouse revenue is deliberately corrupted.
     with duckdb.connect(str(db)) as con:
         con.execute("update analytics.fact_order_lines set net_revenue_cents=1 where line_id='L1'")
@@ -154,3 +163,26 @@ def test_incremental_matches_full_refresh_and_report(source, tmp_path):
     )
     assert result.returncode != 0, result.stdout
     assert "FAIL" in result.stdout
+
+
+def test_dashboard_export_rejects_failed_or_missing_quality(tmp_path):
+    import json
+
+    artifact = tmp_path / "run_results.json"
+    for results in [[], [{"unique_id": "test.retail_analytics.revenue.123", "status": "fail"}]]:
+        artifact.write_text(json.dumps({"results": results}))
+        with pytest.raises(ValueError, match="successful dbt build"):
+            export_dashboard(tmp_path / "missing.duckdb", tmp_path / "data.json", artifact)
+        assert not (tmp_path / "data.json").exists()
+
+
+def test_showcase_is_reproducible_and_exercises_updates(tmp_path):
+    folder, db = tmp_path / "data", tmp_path / "showcase.duckdb"
+    generate_showcase(folder)
+    first = (folder / "initial/order_lines.csv").read_bytes()
+    generate_showcase(folder)
+    assert (folder / "initial/order_lines.csv").read_bytes() == first
+    assert ingest(db, folder / "initial")["changed_lines"] == 720
+    assert ingest(db, folder / "updates")["changed_lines"] == 180
+    assert query(db, "select count(*), max(revision) from raw.order_lines") == [(840, 2)]
+    assert ingest(db, folder / "updates")["replayed"]

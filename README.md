@@ -4,6 +4,16 @@ A small, runnable ELT project that turns synthetic retail CSV batches into a
 dimensional warehouse and a standalone revenue report. Python validates and loads
 the data; DuckDB stores it; dbt builds and tests the analytical models.
 
+**[Open the public interactive dashboard](https://retail-analytics-jesus.daintyeagle131.chatgpt.site/)**
+
+Explore date/category/country filters, revenue trends, a searchable order-line
+table, CSV export and the pipeline's actual dbt quality results. Choose the
+90-day synthetic retail sample or the four-line validation example. The public
+dashboard filters an exported warehouse snapshot in the browser; it does not
+connect to a live cloud database.
+
+![Interactive dashboard](docs/dashboard-preview.png)
+
 The interesting part is correctness when the source changes: duplicate deliveries,
 late orders, revised discounts and cancellations must not inflate revenue.
 
@@ -33,6 +43,22 @@ revenue. The initial €490.00 changes by −€20.00 for a corrected discount,
 The generated HTML is also checked in at [docs/sample-report.html](docs/sample-report.html).
 It is a static export of the warehouse, not a live cloud backend.
 
+## Run the interactive dashboard locally
+
+After the installation above:
+
+```bash
+retail demo
+retail showcase
+python scripts/prepare_dashboard.py
+python -m http.server 8000 --directory build/dashboard
+```
+
+Open `http://localhost:8000`. The showcase uses a separate DuckDB warehouse and
+840 synthetic order lines across 90 days. Both datasets are exported after a
+successful dbt build, with test results and batch provenance. See the
+[dashboard guide](dashboard/README.md) for export and refresh details.
+
 ## Architecture
 
 ```mermaid
@@ -44,7 +70,7 @@ flowchart LR
     F --> T[dbt relationship and reconciliation tests]
     D --> T
     T --> M[Daily and category sales marts]
-    M --> H[Standalone HTML report]
+    M --> H[HTML report and interactive dashboard snapshot]
 ```
 
 - **Ingestion:** strict column contracts, unique source keys, valid dates,
@@ -84,7 +110,8 @@ repository's `dbt/profiles.yml` and the CLI passes an absolute database path.
 To run dbt directly, set `RETAIL_DB_PATH` and pass `--project-dir dbt --profiles-dir dbt`.
 
 GitHub Actions runs Python checks and the complete pipeline on Python 3.11 and
-3.12, and uploads the generated report as an artifact.
+3.12, and uploads the generated report, snapshots and dashboard as artifacts.
+It also runs eight dashboard aggregation/filter/export tests with Node.js 24.
 
 ## Scope and trade-offs
 

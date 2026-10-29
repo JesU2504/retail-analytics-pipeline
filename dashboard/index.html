@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explore a tested retail ELT pipeline through revenue trends, category filters, order lines and real dbt quality results. Synthetic portfolio data by Jesus Urbaneja.">
+  <meta name="theme-color" content="#17243b">
+  <title>Retail Analytics — Jesus Urbaneja</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232d59de'/%3E%3Cpath d='M17 43V29h7v14m5 0V20h7v23m5 0V13h7v30' stroke='white' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to dashboard</a>
+  <aside class="sidebar">
+    <a class="brand" href="#overview" aria-label="Retail Analytics home"><span class="brand-mark">▥</span><span>Retail<span class="brand-sub">ANALYTICS</span></span></a>
+    <p class="nav-label">WORKSPACE</p>
+    <nav aria-label="Dashboard sections">
+      <button data-view="overview" class="nav-item active" aria-current="page"><span aria-hidden="true">▦</span> Overview</button>
+      <button data-view="orders" class="nav-item"><span aria-hidden="true">☷</span> Order explorer</button>
+      <button data-view="pipeline" class="nav-item"><span aria-hidden="true">◇</span> Pipeline & quality</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="project-note"><span class="status-dot"></span> Portfolio demonstration<p>Python · DuckDB · dbt<br>Synthetic data, real pipeline.</p></div><a class="source-link" href="https://github.com/JesU2504/retail-analytics-pipeline" target="_blank" rel="noopener">View GitHub source <span aria-hidden="true">↗</span></a><p class="author">Built by Jesus Urbaneja</p></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><span>Portfolio <span class="slash">/</span> <strong>Retail Analytics Pipeline</strong></span><span class="snapshot-badge"><span class="status-dot"></span> Warehouse snapshot</span></header>
+    <main id="main">
+      <div class="page-heading"><div><p class="eyebrow">ANALYTICS WORKSPACE</p><h1 id="page-title">Retail performance</h1><p class="subtitle" id="page-description">From validated source batches to business insights.</p></div><button class="button secondary" id="download"><span aria-hidden="true">↓</span> Export CSV</button></div>
+      <div class="demo-notice"><span class="demo-pill">SYNTHETIC DATA</span><span>Explore a reproducible portfolio dataset. Filters run in your browser on an exported DuckDB snapshot.</span></div>
+      <div id="loading" role="status">Loading warehouse snapshot…</div>
+      <div id="error" role="alert" hidden></div>
+      <div id="content" hidden>
+        <section class="filters" aria-label="Filter analytics">
+          <label>Dataset<select id="dataset"><option value="showcase">90-day retail sample</option><option value="validation">Pipeline validation example</option></select></label>
+          <label>From<input type="date" id="start"></label>
+          <label>To<input type="date" id="end"></label>
+          <label>Category<select id="category"><option value="">All categories</option></select></label>
+          <label>Country<select id="country"><option value="">All countries</option></select></label>
+          <button id="reset" class="reset">Reset filters ↺</button>
+        </section>
+        <div class="range-row"><div class="presets" aria-label="Date range presets"><button data-days="30">Last 30 days</button><button data-days="90">Last 90 days</button><button data-days="0" class="selected">All dates</button></div><span id="filter-summary" aria-live="polite"></span></div>
+        <p id="date-error" class="date-error" role="alert" hidden>Choose a start date on or before the end date.</p>
+        <div id="overview-view" class="view">
+          <section class="metrics" aria-label="Performance metrics">
+            <article class="metric"><div class="metric-top">Net revenue <span class="metric-icon">€</span></div><strong id="revenue">—</strong><p>Completed sales after line discounts</p></article>
+            <article class="metric"><div class="metric-top">Completed orders <span class="metric-icon">▤</span></div><strong id="orders">—</strong><p id="order-note">Distinct completed order IDs</p></article>
+            <article class="metric"><div class="metric-top">Average order value <span class="metric-icon">↗</span></div><strong id="aov">—</strong><p>Revenue ÷ completed orders</p></article>
+            <article class="metric"><div class="metric-top">Line completion <span class="metric-icon">✓</span></div><strong id="completion">—</strong><p id="completion-note">Completed lines ÷ selected lines</p></article>
+          </section>
+          <div class="charts-grid"><section class="panel trend-panel"><div class="panel-heading"><div><h2>Revenue over time</h2><p>Daily net revenue · EUR</p></div><span class="legend"><i></i> Net revenue</span></div><div id="trend" class="trend"></div></section><section class="panel category-panel"><div class="panel-heading"><div><h2>Sales by category</h2><p>Share of selected net revenue</p></div></div><div id="categories"></div></section></div>
+          <div class="bottom-grid"><section class="panel"><div class="panel-heading"><div><h2>Market breakdown</h2><p>Revenue and completed orders by country</p></div></div><div class="table-scroll"><table><thead><tr><th scope="col">Market</th><th scope="col">Revenue</th><th scope="col">Orders</th><th scope="col">Share</th></tr></thead><tbody id="markets"></tbody></table></div></section><section class="panel quality-summary"><div class="panel-heading"><div><h2>Trust the numbers</h2><p>Checks from the latest exported dbt build</p></div><span class="quality-icon">✓</span></div><strong id="quality-count">—</strong><p>Keys, relationships and revenue reconciliation</p><div class="quality-tags"><span>Source → fact</span><span>Fact → marts</span><span>Foreign keys</span></div><button class="text-button" data-view="pipeline">Explore pipeline & quality <span aria-hidden="true">→</span></button></section></div>
+        </div>
+        <section id="orders-view" class="view panel" hidden><div class="panel-heading"><div><h2>Order line explorer</h2><p>One current version per line · monetary values in EUR</p></div><label class="search-label">Search orders<input id="search" type="search" placeholder="Order ID, line or product"></label></div><div class="table-scroll"><table class="orders-table"><thead><tr><th scope="col">Line / Order</th><th scope="col"><button id="sort-date">Date ↕</button></th><th scope="col">Product</th><th scope="col">Country</th><th scope="col">Status</th><th scope="col"><button id="sort-revenue">Revenue ↕</button></th><th scope="col">Revision</th></tr></thead><tbody id="order-rows"></tbody></table></div><div class="pagination"><span id="page-info" aria-live="polite"></span><div><button id="previous" class="button secondary">← Previous</button><button id="next" class="button secondary">Next →</button></div></div></section>
+        <section id="pipeline-view" class="view" hidden><div class="panel pipeline-intro"><div class="panel-heading"><div><h2>From CSV to verified metrics</h2><p>Executed locally in Python and dbt; exported for this public dashboard.</p></div><a href="https://github.com/JesU2504/retail-analytics-pipeline/blob/codex/initial-mvp/docs/walkthrough.md" target="_blank" rel="noopener">Read walkthrough ↗</a></div><div class="pipeline-flow"><div><span>01</span><strong>Validate & load</strong><p>CSV contracts<br>Transactional upserts</p></div><span class="flow-arrow">→</span><div><span>02</span><strong>Build warehouse</strong><p>DuckDB star schema<br>Incremental order facts</p></div><span class="flow-arrow">→</span><div><span>03</span><strong>Test & reconcile</strong><p>dbt quality gates<br>Source-to-mart revenue</p></div><span class="flow-arrow">→</span><div><span>04</span><strong>Explore snapshot</strong><p>Exported JSON<br>Browser filtering</p></div></div></div><div class="bottom-grid"><section class="panel"><div class="panel-heading"><div><h2>Data quality checks</h2><p id="quality-meta"></p></div><span class="pass-badge">Passed at export</span></div><ul id="quality-checks" class="checks-list"></ul></section><section class="panel"><div class="panel-heading"><div><h2>Batch audit</h2><p>Committed ingestion batches</p></div></div><div id="batch-audit"></div><div class="semantics"><h3>What the numbers mean</h3><p>Revenue includes completed lines after discounts. Cancelled lines stay in the warehouse and contribute zero.</p><p>Customers and products use current attributes (SCD type 1). Distinct order counts across categories are not additive.</p><h3>Snapshot, not a live warehouse</h3><p>The browser does not run Python, ingest new data or query a cloud database. Rebuild and re-export the pipeline to publish updated results.</p></div></section></div></section>
+        <footer><span id="snapshot-info"></span><a href="https://github.com/JesU2504" target="_blank" rel="noopener">Jesus Urbaneja · GitHub ↗</a></footer>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
